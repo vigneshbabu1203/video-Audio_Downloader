@@ -37,11 +37,13 @@ def search_youtube(query):
 def download_audio(video_url, song_title):
     """Download the audio from a YouTube video URL as MP3."""
     safe_title = sanitize_filename(song_title)  # Sanitize file name
+    file_path = f"{safe_title}.mp3"
+    
     ydl_opts = {
         'format': 'bestaudio/best',
         'extract_audio': True,
         'audio_format': 'mp3',
-        'outtmpl': f'{safe_title}.%(ext)s',
+        'outtmpl': file_path,
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
@@ -53,7 +55,7 @@ def download_audio(video_url, song_title):
     with YoutubeDL(ydl_opts) as ydl:
         try:
             ydl.download([video_url])
-            return f"{safe_title}.mp3"
+            return file_path
         except Exception as e:
             st.error(f"Error while downloading: {e}")
             return None
@@ -61,16 +63,19 @@ def download_audio(video_url, song_title):
 def download_video(video_url, video_title):
     """Download the video from a YouTube video URL as MP4."""
     safe_title = sanitize_filename(video_title)  # Sanitize file name
+    file_path = f"{safe_title}.mp4"
+    
     ydl_opts = {
-        'format': 'best',
-        'outtmpl': f'{safe_title}.%(ext)s',
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]', 
+        'merge_output_format': 'mp4', 
+        'outtmpl': file_path,
         'ffmpeg_location': ffmpeg_path
     }
     
     with YoutubeDL(ydl_opts) as ydl:
         try:
             ydl.download([video_url])
-            return f"{safe_title}.mp4"
+            return file_path
         except Exception as e:
             st.error(f"Error while downloading: {e}")
             return None
@@ -84,7 +89,7 @@ song_name = st.text_input("Enter song name or video title:")
 
 download_type = st.radio("Choose download type:", ["Audio (MP3)", "Video (MP4)"])
 
-if st.button("Search & Download"):
+if st.button("Search"):
     if song_name:
         video_url, video_title = search_youtube(song_name)
         
@@ -97,8 +102,20 @@ if st.button("Search & Download"):
             else:
                 file_path = download_video(video_url, video_title)
 
-            if file_path:
-                st.success(f"Download complete! Saved as {file_path}")
+            if file_path and os.path.exists(file_path):
+                st.success(f"Download complete! Saved as `{file_path}`")
+                
+                # Provide a download button
+                with open(file_path, "rb") as f:
+                    st.download_button(
+                        label="Download ",
+                        data=f,
+                        file_name=file_path,
+                        mime="audio/mpeg" if download_type == "Audio (MP3)" else "video/mp4"
+                    )
+                    
+            else:
+                st.error("Download failed. Please try again.")
         else:
             st.error("No results found. Try a different search term.")
     else:
