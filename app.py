@@ -38,20 +38,19 @@ def download_audio(video_url, song_title):
     """Download the audio from a YouTube video URL as MP3."""
     safe_title = sanitize_filename(song_title)  # Sanitize file name
     file_path = f"{safe_title}.mp3"
-    
+
     ydl_opts = {
         'format': 'bestaudio/best',
-        'extract_audio': True,
-        'audio_format': 'mp3',
-        'outtmpl': file_path,
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
             'preferredquality': '192',
         }],
-        'ffmpeg_location': ffmpeg_path
+        'outtmpl': file_path,  # Ensure correct filename format
+        'ffmpeg_location': ffmpeg_path,
+        'keepvideo': True  # Ensure the file is not deleted after download
     }
-    
+
     with YoutubeDL(ydl_opts) as ydl:
         try:
             ydl.download([video_url])
@@ -64,14 +63,15 @@ def download_video(video_url, video_title):
     """Download the video from a YouTube video URL as MP4."""
     safe_title = sanitize_filename(video_title)  # Sanitize file name
     file_path = f"{safe_title}.mp4"
-    
+
     ydl_opts = {
-        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]', 
-        'merge_output_format': 'mp4', 
-        'outtmpl': file_path,
-        'ffmpeg_location': ffmpeg_path
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]',
+        'merge_output_format': 'mp4',
+        'outtmpl': file_path,  # Ensure correct filename format
+        'ffmpeg_location': ffmpeg_path,
+        'keepvideo': True  # Ensure the file is not deleted after download
     }
-    
+
     with YoutubeDL(ydl_opts) as ydl:
         try:
             ydl.download([video_url])
@@ -80,14 +80,13 @@ def download_video(video_url, video_title):
             st.error(f"Error while downloading: {e}")
             return None
 
-
 # Streamlit UI
-st.set_page_config(page_title="YouTube Downloader", page_icon="🎵")
-st.title("🎶 YouTube Video & Audio Downloader 🎥")
+st.set_page_config(page_title="Downloader", page_icon="🎵")
+st.title("🎶 Audio & Video Downloader 🎥")
 
 song_name = st.text_input("Enter song name or video title:")
 
-download_type = st.radio("Choose download type:", ["Audio (MP3)", "Video (MP4)"])
+download_type = st.radio("Choose download type:", ["Audio (MP3) 🎵 ", "Video (MP4) 📹 "])
 
 if st.button("Search"):
     if song_name:
@@ -97,21 +96,23 @@ if st.button("Search"):
             st.success(f"Found: {video_title}")
             st.write(f"Downloading from: {video_url}")
 
-            if download_type == "Audio (MP3)":
+            if download_type == "Audio (MP3) 🎵 ":
                 file_path = download_audio(video_url, video_title)
+                mime_type = "audio/mpeg"
             else:
                 file_path = download_video(video_url, video_title)
+                mime_type = "video/mp4"
 
             if file_path and os.path.exists(file_path):
-                st.success(f"Download complete! Saved as `{file_path}`")
+                st.success(f"Processed! Click download")
                 
                 # Provide a download button
                 with open(file_path, "rb") as f:
                     st.download_button(
-                        label="Download ",
+                        label="Download File",
                         data=f,
                         file_name=file_path,
-                        mime="audio/mpeg" if download_type == "Audio (MP3)" else "video/mp4"
+                        mime=mime_type
                     )
                     
             else:
